@@ -13,105 +13,37 @@ UI Components: Review UI preferences on ./ui-preferences.md
 
 Vercel Deployment: Set up the project for deployment on Vercel. Ensure environment variables are configured correctly for both development and production.
 
-Database: For a flexible and scalable solution, use Prisma as the ORM (Object-Relational Mapper) with a PostgreSQL database. To start with a free tier, use Vercel Postgres, which integrates natively with Vercel and offers a generous free plan.
+Database:
+For details on the selected database management system for this project, see `database/dbms.md`.
 
-Authentication:
-Use Clerk (https://clerk.com/) for authentication in your Next.js app. Clerk provides a secure, scalable, and developer-friendly authentication solution with built-in support for oAuth providers.
+Authentication & User Management:
+You have two main options for implementing authentication and user management as an API gateway (auth proxy) for this application:
 
-For details over authentication and user info. Please refer to ./authentication.md
+1. **Better Auth Proxy API** (`.github/auth/auth-2bc-betterAuth.md`):
+   - Implements a standalone authentication proxy using the Hono web framework and Better Auth library.
+   - Acts as a centralized API gateway for authentication, authorization, and user data, suitable for microservices and SSO scenarios.
+   - Offers flexibility to run as a separate service, supports social sign-in, 2FA, and can be deployed independently of the main Next.js app.
+   - See `.github/auth/auth-2bc-betterAuth.md` for setup, integration, and deployment details.
+
+2. **Clerk Proxy API** (`.github/auth/auth-b2c-clerk.md`):
+   - Uses Clerk, a managed authentication provider, as the API gateway for authentication and user management.
+   - Clerk provides a dedicated Next.js SDK, specifically designed for seamless integration with Next.js projects. This SDK simplifies authentication flows, session management, and role-based access control, and offers built-in UI components for sign-in, sign-up, and user profile management.
+   - Clerk handles oAuth, passwordless, and multi-factor authentication out of the box, and is ideal for teams seeking a robust, low-maintenance, and Next.js-optimized solution.
+   - See `.github/auth/auth-b2c-clerk.md` for implementation steps and best practices.
+
+> **Note:** Only one Auth proxy API should be active at a time. All API endpoints in the Next.js app will be proxied through the selected Auth API gateway to provide security, enforce user role-based access, and ensure a consistent authentication layer across all services. For implementation details and available proxy options, see the documentation in the `auth` directory.
 
 For a comprehensive overview and guidance on choosing an authentication process for modern web apps, see this video: [Choosing Authentication for Your Next.js App](https://www.youtube.com/watch?v=lxslnp-ZEMw). It is a highly recommended source for understanding the pros and cons of different authentication providers and strategies.
 
-2. Database Schema (Prisma)
-Design a Prisma schema with the following models. The relationships between models are crucial for a functional app.
+2. Database Schema
+All information about the database schema, entities, and relationships has been moved to `database/schema.md`.
 
-# Food Order Management App: Entities & Relations
+**Summary:**
+- The schema covers all core entities: Authenticated User, Client, Seller, Product, Order, OrderItem, PendingOrder, Schedule, and ChatMessage.
+- It details entity relationships (e.g., many-to-many, one-to-many) and how user references are managed via the Auth proxy service.
+- Notes on using Auth user IDs, role metadata, and Prisma/Postgres best practices are included.
 
-## Entities
-
-### Clerk User
-- Represents a person who can log in, managed by Clerk.
-- Has a role stored in Clerk's `public_metadata` (e.g., `ADMIN`, `SELLER`, `CLIENT`).
-- Clerk user is referenced by its unique Clerk user ID (`user.id`).
-- Does not directly belong to a Client/Seller/Admin in the database, but is linked via Clerk user ID and role metadata.
-
-### Client
-- Represents a business or buyer.
-- Has business details (name, contact info, etc.).
-- Has id, name, address, phone, email.
-- Has many Clerk users (role: CLIENT) referenced by Clerk user IDs.
-- Has many Orders.
-- Has order confirmation and notification settings.
-- Has one Seller.
-
-### Seller
-- Represents a sales representative.
-- Can be managed by Admins.
-- Has many Products (many-to-many).
-- Has many Orders (1-to-many).
-- Has schedules (availability, etc.).
-- Has many Clients (1-to-many)
-- Has many Clerk users (role: SELLER) referenced by Clerk user IDs.
-
-### Product
-- Represents a food item or product.
-- Has id, name, description, unit (e.g., 'case', 'pk').
-- Can be associated with many Sellers (many-to-many).
-- Can be part of many Orders via OrderItems.
-
-### Order
-- Represents a food order placed by a Client.
-- Has id, clientId, status, items, createdAt.
-- Belongs to a Client.
-- Belongs to a Seller.
-- Has many OrderItems.
-- Has status, confirmation/cancellation logic, timestamps.
-
-### OrderItem
-- Represents a product within an Order.
-- Has productId, quantity, confirmed (boolean).
-- Belongs to an Order.
-- Belongs to a Product.
-
-### PendingOrder
-- Represents a pending order for a client.
-- Has clientId, status, notes.
-
-### Schedule
-- Represents availability for Seller.
-- Belongs to a Seller.
-- Uses enums and compound unique constraints for time slots.
-
-### ChatMessage
-- Represents a message in real-time chat.
-- Belongs to a Clerk user (referenced by Clerk user ID).
-- Can be associated with an Order or general chat.
-- Belongs to a Seller.
-- Follows the relation between Clients & Sellers
-
-## Relations
-- **Clerk User–Client:** Many Clerk users (role: CLIENT, referenced by Clerk user ID) belong to one Client. Store Clerk user IDs in the Client entity or as a reference field.
-- **Client–Order:** One Client has many Orders.
-- **Seller–Product:** Many-to-many (Seller can sell many Products; Product can be sold by many Sellers).
-- **Seller–Client:** Sellers have many Clients (by clientId).
-- **Seller–Order:** One Seller has many Orders.
-- **Seller–Schedule:** One Seller has many Schedules.
-- **Order–OrderItem:** One Order has many OrderItems.
-- **OrderItem–Product:** Each OrderItem references one Product.
-- **Order–Seller:** Each Order is assigned to one Seller.
-- **Order–Client:** Each Order is placed by one Client.
-- **ChatMessage–Clerk User:** Each ChatMessage is sent by a Clerk user (referenced by Clerk user ID).
-- **ChatMessage–Order:** (optional) Can be linked to an Order for order-specific chat.
-- **Client–Seller:** One Seller has many Clients.
-- **PendingOrder–Client:** Each PendingOrder is assigned to a Client.
-
-## Notes
-- All user references in the database should use Clerk user IDs, not local User IDs.
-- User roles and permissions are managed via Clerk's `public_metadata`.
-- Seller, Client, Product, Order, OrderItem, and PendingOrder should be reflected in the Prisma schema.
-- When querying or creating entities related to users, use Clerk user ID and role metadata for lookups and access control.
-- Admins can manage Sellers and view analytics.
-- All entities are managed via Prisma/Postgres.
+For full details, see `database/schema.md`.
 
 3. API Routes and Backend Logic
 Develop the following API endpoints under the /api directory using Route Handlers for the App Router. This approach centralizes API logic and allows for clear separation of concerns.
@@ -329,7 +261,7 @@ Visualization: On the frontend, use a charting library (like Recharts for React)
 # Cross-Referencing Project Docs
 
 For all implementation, design, and architecture decisions, always review and follow:
-- [Authentication & User Management](./authentication.md)
+- [Authentication & User Management](./auth)
 - [UI/UX Preferences & Design Guidelines](./ui-preferences.md)
 
 These files contain the most up-to-date recommendations and implementation steps for authentication, user management, and UI/UX. Ensure all code, configuration, and documentation changes are consistent with these references.

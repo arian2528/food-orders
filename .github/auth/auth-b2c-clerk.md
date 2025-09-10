@@ -48,7 +48,7 @@ This guide explains how to implement authentication and robust role-based access
          <>
            <SignedIn>
              {/* dashboard content */}
-           </SignedIn>
+           </SignedOut>
            <SignedOut>
              <RedirectToSignIn />
            </SignedOut>
