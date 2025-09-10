@@ -14,7 +14,7 @@ UI Components: Review UI preferences on ./ui-preferences.md
 Vercel Deployment: Set up the project for deployment on Vercel. Ensure environment variables are configured correctly for both development and production.
 
 Database:
-For details on the selected database management system for this project, see `database/dbms.md`.
+For details on the selected database management system (PostgreSQL) and ORM (Prisma) for this project, see `database/dbms.md`.
 
 Authentication & User Management:
 You have two main options for implementing authentication and user management as an API gateway (auth proxy) for this application:
