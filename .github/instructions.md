@@ -16,6 +16,9 @@ Vercel Deployment: Set up the project for deployment on Vercel. Ensure environme
 Database:
 For details on the selected database management system (PostgreSQL) and ORM (Prisma) for this project, see `database/dbms.md`.
 
+Migrations & Seeding:
+For instructions on managing schema migrations and seeding your database, see `.github/database/migrations.md`.
+
 Authentication & User Management:
 You have two main options for implementing authentication and user management as an API gateway (auth proxy) for this application:
 
@@ -45,10 +48,18 @@ All information about the database schema, entities, and relationships has been 
 
 For full details, see `database/schema.md`.
 
+## Migrations and Seeding (Recommended)
+Migrations and seeding are essential practices for managing SQL database projects:
+- **Migrations** allow you to version and apply schema changes safely across all environments, ensuring consistency and traceability.
+- **Seeding** lets you populate your database with initial or test data, which is useful for development, testing, and demo purposes.
+
+For this project, see `database/migrations.md` for:
+- How to create, apply, and manage Prisma migrations
+- How to seed your database with initial data
+- Best practices for keeping your schema and data in sync
+
 3. API Routes and Backend Logic
 Develop the following API endpoints under the /api directory using Route Handlers for the App Router. This approach centralizes API logic and allows for clear separation of concerns.
-
-/api/auth/[...nextauth]: Handle all authentication logic using NextAuth.js. This will use the traditional Pages Router structure.
 
 /app/api/products/route.ts:
 
