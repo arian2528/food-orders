@@ -58,6 +58,60 @@ For this project, see `database/migrations.md` for:
 - How to seed your database with initial data
 - Best practices for keeping your schema and data in sync
 
+## Testing Strategy: Unit, Integration, and End-to-End Tests
+
+A robust testing strategy is essential for ensuring the reliability, security, and maintainability of your food order management application. The following recommendations cover unit, integration, and end-to-end (E2E) testing:
+
+### 1. Unit Testing
+- **Purpose:** Validate individual functions, components, and modules in isolation.
+- **What to Test:**
+  - Utility functions (e.g., price calculations, date/time logic, idempotency key generation)
+  - React components (UI rendering, props handling, conditional rendering)
+  - API route handlers (input validation, error handling, business logic)
+- **Recommended Tools:**
+  - [Jest](https://jestjs.io/) for JavaScript/TypeScript unit tests
+  - [React Testing Library](https://testing-library.com/docs/react-testing-library/intro/) for React components
+- **Best Practices:**
+  - Mock external dependencies (e.g., database, authentication)
+  - Keep tests fast and focused on a single responsibility
+  - Use descriptive test names and clear assertions
+
+### 2. Integration Testing
+- **Purpose:** Test how multiple modules or components work together, including interactions with the database and authentication layer.
+- **What to Test:**
+  - API endpoints with real or in-memory database (e.g., order placement, product updates, chat message flow)
+  - Authentication and authorization flows (role-based access, protected routes)
+  - Database migrations and seeding scripts
+- **Recommended Tools:**
+  - [Jest](https://jestjs.io/) or [Vitest](https://vitest.dev/) for integration tests
+  - [Supertest](https://github.com/ladjs/supertest) for HTTP API testing
+  - [Prisma Test Utilities](https://www.prisma.io/docs/guides/testing/integration-testing)
+- **Best Practices:**
+  - Use a separate test database or an in-memory database for integration tests
+  - Reset database state between tests to ensure isolation
+  - Test both success and failure scenarios (e.g., unauthorized access, invalid data)
+
+### 3. End-to-End (E2E) Testing
+- **Purpose:** Simulate real user interactions across the entire application stack, from frontend to backend and database.
+- **What to Test:**
+  - User flows: login, product browsing, order placement, order confirmation/cancellation, chat, analytics dashboard
+  - Role-based access: verify that buyers, sellers, and admins see and can do only what they are permitted
+  - UI responsiveness and accessibility
+- **Recommended Tools:**
+  - [Cypress](https://www.cypress.io/) or [Playwright](https://playwright.dev/) for E2E browser automation
+- **Best Practices:**
+  - Run E2E tests against a deployed staging environment or a local instance with seeded data
+  - Use realistic test accounts and data
+  - Automate E2E tests in your CI/CD pipeline for every pull request
+
+### General Testing Recommendations
+- **Test Coverage:** Aim for high coverage on core business logic, API endpoints, and critical user flows.
+- **Continuous Integration:** Integrate all test suites (unit, integration, E2E) into your CI/CD pipeline to catch regressions early.
+- **Documentation:** Document your testing setup and how to run each test suite in the project README or a dedicated `TESTING.md` file.
+- **Error Reporting:** Ensure failed tests provide clear, actionable error messages.
+
+For more details and examples, see the official documentation for [Jest](https://jestjs.io/docs/getting-started), [React Testing Library](https://testing-library.com/docs/), [Cypress](https://docs.cypress.io/), and [Playwright](https://playwright.dev/docs/intro).
+
 3. API Routes and Backend Logic
 Develop the following API endpoints under the /api directory using Route Handlers for the App Router. This approach centralizes API logic and allows for clear separation of concerns.
 
@@ -247,6 +301,60 @@ Centralized Logging and Monitoring: Implement comprehensive logging for all API 
 
 CORS (Cross-Origin Resource Sharing): Correctly configure CORS headers on your API routes. This allows the frontend to safely make requests to your API while preventing unauthorized cross-origin access from malicious websites.
 
+# API Response Timeouts and Fast Failures
+
+To ensure a responsive user experience and prevent the frontend from hanging on slow API responses, all API calls should enforce a maximum response time of **5 seconds**. If an API does not respond within this window, the request should be aborted and a user-friendly error should be shown.
+
+## How to Implement API Timeouts
+- **Backend (Node.js/Next.js):**
+  - For all outgoing HTTP requests (e.g., to external services), use `Promise.race` to enforce a timeout:
+    ```js
+    // Example: Enforce a 5-second timeout on any async API call
+    async function withTimeout(promise, ms = 5000) {
+      return Promise.race([
+        promise,
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Request timed out')), ms))
+      ]);
+    }
+    // Usage:
+    // await withTimeout(fetch(...))
+    ```
+  - Apply this pattern to all API route handlers that make network/database calls.
+- **Frontend (React/Next.js):**
+  - When calling your own API endpoints, use a similar timeout strategy (e.g., with `fetch` and `AbortController`).
+  - Always show a loading spinner or skeleton, and display a clear error if the request times out.
+
+## Project Policy: API Response SLA
+- All API endpoints must respond within **5 seconds**. If a request cannot be fulfilled in this time, return a 504 Gateway Timeout or a custom error message.
+- Monitor and log all slow requests for further optimization.
+
+# Frontend: Better Loading Strategies
+
+To provide a smooth and responsive user experience, implement the following loading strategies:
+
+- **Skeleton Screens:**
+  - Use skeleton components (e.g., with shadcn/ui or your own) to indicate loading state for lists, tables, and cards.
+- **Optimistic UI Updates:**
+  - For actions like order placement or chat messages, update the UI immediately and roll back if the API call fails.
+- **Progress Indicators:**
+  - Show spinners or progress bars for actions that may take more than 500ms.
+- **Lazy Loading:**
+  - Load non-critical data/components only when needed (e.g., analytics graphs, modals).
+- **Error Boundaries:**
+  - Use React error boundaries to catch and display errors gracefully.
+- **Timeout Handling:**
+  - If an API call takes longer than 5 seconds, show a timeout error and allow the user to retry.
+- **Preloading and Prefetching:**
+  - Use Next.js's `next/link` prefetching and `useEffect` to preload data for likely navigation targets.
+
+> **Best Practice:** Always provide immediate visual feedback for user actions, and never leave the user waiting without indication.
+
+# Performance Requirement: App Response Time
+
+- The application must respond to all user actions (including API calls) in **less than 5 seconds**.
+- Any operation expected to take longer should provide clear progress feedback and allow the user to cancel or retry.
+- Monitor frontend and backend performance in production and address any slow paths as a priority.
+
 Testing
 Unit & Integration Tests: Cover all core functionalities: order placement, confirmation, cancellation, and scheduled auto-confirmation.
 
@@ -268,6 +376,63 @@ Product Acquisition: Track how many times each product has been ordered over a g
 Order Time: Analyze the distribution of order placement times to identify peak ordering hours and days.
 
 Visualization: On the frontend, use a charting library (like Recharts for React) to display the aggregated data in clear and interactive graphs.
+
+# CI/CD: Continuous Integration and Deployment
+
+A robust CI/CD (Continuous Integration and Continuous Deployment) pipeline is essential for maintaining code quality, automating tests, and ensuring reliable deployments. This project is designed to work seamlessly with GitHub Actions and GitHub Workflows.
+
+## Recommended CI/CD Practices
+
+- **Automated Testing:**
+  - Run all unit, integration, and E2E tests on every pull request and push to main branches.
+  - Fail the build if any test fails.
+- **Linting and Formatting:**
+  - Run code linters (e.g., ESLint) and formatters (e.g., Prettier) as part of the workflow.
+  - Fail the build on lint or formatting errors.
+- **Type Checking:**
+  - Run TypeScript type checks to catch type errors early.
+- **Build Verification:**
+  - Ensure the Next.js app builds successfully before deployment.
+- **Database Migrations:**
+  - Run Prisma migrations in a staging environment before production deploys.
+- **Preview Deployments:**
+  - Use Vercel or a similar platform to create preview deployments for each pull request.
+- **Secrets Management:**
+  - Store sensitive environment variables and secrets in GitHub Actions secrets, not in the repository.
+- **Deployment:**
+  - Automate deployment to Vercel (or your chosen platform) on merge to the main branch.
+
+## Example: GitHub Actions Workflow (`.github/workflows/ci.yml`)
+
+```yaml
+name: CI
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run build
+      - run: npm test
+      # Optionally run integration/E2E tests here
+      # - run: npm run test:e2e
+```
+
+> **Tip:** For deployment, use Vercel's GitHub integration or add a separate workflow for custom deployment logic.
+
+## References
+- [GitHub Actions Documentation](https://docs.github.com/en/actions)
+- [Vercel GitHub Integration](https://vercel.com/docs/concepts/git/vercel-for-github)
 
 # Cross-Referencing Project Docs
 
@@ -346,30 +511,3 @@ Recommended Folder Structure
 ├── types/
 │   └── ... (TypeScript types and interfaces)
 └── ... (other config files like next.config.js)
-
-Explanation of the Structure
-app/: This is the core of the App Router structure. All pages, layouts, and API routes are nested here.
-
-(dashboard): This is a Route Group, indicated by the parentheses. It's used to group related routes (dashboard, analytics, orders, etc.) without affecting the URL path. This is useful for sharing a single layout file across multiple nested routes.
-
-api/: This directory contains all Route Handlers, which serve as your backend API endpoints. Each file within this directory (route.ts) handles a specific HTTP method for a given path.
-
-[id]: These are Dynamic Segments. The brackets around id indicate that this part of the path is a variable, allowing you to create routes like /api/orders/123 or /app/orders/456.
-
-components/: This directory is for all your React components.
-
-ui/: This is where you would place the components generated by shadcn/ui.
-
-dashboard/: Specific components for the dashboard, such as product cards or tables.
-
-shared/: Reusable components used across the entire application (e.g., navigation bar, modals).
-
-lib/: This is a common convention for storing utility functions and external library configurations, such as your Prisma client instance or authentication logic.
-
-middleware.ts: This file, at the root of the project, is where you'll implement the authorization logic to protect your routes based on user roles.
-
-prisma/: This folder contains your Prisma schema and any related files.
-
-public/: This is for static assets that can be served directly, like images or fonts.
-
-types/: A dedicated folder for all custom TypeScript types and interfaces to keep your code organized.
