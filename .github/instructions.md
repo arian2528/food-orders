@@ -442,6 +442,47 @@ For all implementation, design, and architecture decisions, always review and fo
 
 These files contain the most up-to-date recommendations and implementation steps for authentication, user management, and UI/UX. Ensure all code, configuration, and documentation changes are consistent with these references.
 
+# Caching Strategies for Next.js on Vercel
+
+Efficient caching is critical for performance, scalability, and cost optimization in a Next.js app deployed on Vercel. Use the following strategies to maximize speed and minimize server load:
+
+## 1. Static Site Generation (SSG) and Incremental Static Regeneration (ISR)
+- **SSG:** Use `getStaticProps` and `getStaticPaths` to pre-render pages at build time. This is ideal for pages that rarely change (e.g., product listings, marketing pages).
+- **ISR:** Use ISR to update static pages after deployment by setting the `revalidate` property in `getStaticProps`. This allows you to serve static content with periodic background updates, combining the benefits of static and dynamic rendering.
+- **Best Practice:** Use SSG/ISR for all public, non-user-specific pages.
+
+## 2. Server-Side Rendering (SSR) with Smart Caching
+- **SSR:** Use `getServerSideProps` for pages that require up-to-date, user-specific, or dynamic data.
+- **Vercel Edge Caching:** On Vercel, you can cache SSR responses at the edge using the `Cache-Control` header. For example, set `Cache-Control: s-maxage=60, stale-while-revalidate=300` to cache for 1 minute and serve stale content while revalidating.
+- **Best Practice:** Cache SSR pages that are not highly personalized but change frequently (e.g., analytics dashboards, trending products).
+
+## 3. API Route Caching
+- **Edge Middleware:** Use Vercel Edge Middleware to cache API responses at the edge for public or semi-public data.
+- **Cache-Control Headers:** Set appropriate `Cache-Control` headers in your API responses. For example, `Cache-Control: public, s-maxage=60, stale-while-revalidate=300`.
+- **Client-Side Caching:** Use SWR or React Query on the frontend to cache API responses in the browser and revalidate in the background.
+
+## 4. Client-Side Data Fetching and Caching
+- **SWR/React Query:** Use [SWR](https://swr.vercel.app/) or [React Query](https://tanstack.com/query/latest) for client-side data fetching. These libraries provide built-in caching, background revalidation, and stale-while-revalidate strategies.
+- **Best Practice:** Use SWR/React Query for user dashboards, chat, and analytics where data freshness is important but instant updates are not always required.
+
+## 5. CDN and Asset Caching
+- **Static Assets:** All files in the `public/` directory are automatically cached by Vercel's CDN. Use hashed filenames for cache busting.
+- **Fonts and Images:** Use Next.js's built-in `next/image` and `next/font` for optimized asset delivery and caching.
+
+## 6. Cache Invalidation
+- **ISR Revalidation:** Use on-demand revalidation (e.g., via API routes or webhooks) to invalidate and rebuild static pages when data changes.
+- **Purge API:** Use Vercel's Purge API to manually clear cache for specific routes if needed.
+
+## 7. Caching for Authenticated Content
+- **Do Not Cache Personalized Data:** Never cache pages or API responses that contain sensitive or user-specific information unless you use private, per-user cache keys.
+- **Best Practice:** Use SSR or client-side rendering for personalized dashboards and user data.
+
+## References
+- [Vercel Caching Documentation](https://vercel.com/docs/edge-network/caching)
+- [Next.js Caching Guide](https://nextjs.org/docs/app/building-your-application/caching)
+- [SWR Documentation](https://swr.vercel.app/)
+- [React Query Documentation](https://tanstack.com/query/latest)
+
 Recommended Folder Structure
 /
 ├── app/
