@@ -54,6 +54,11 @@ A food order full stack app
 - **CI/CD:** GitHub Actions for testing, linting, and deployment (see `.github/instructions.md`).
 - **Multithreading/parallelism:** Use worker threads, Promise.all, and background jobs for efficiency (see `.github/instructions.md`).
 
+## Validation & Messaging
+
+- **Schema Validation:** Uses [Zod](https://zod.dev/) for robust server-side and API input validation. All API endpoints validate incoming data with Zod schemas for type safety and security. See `.github/instructions.md` for best practices and examples.
+- **Email & SMS:** Integrates with [Mailgun](https://www.mailgun.com/) for sending transactional emails and SMS notifications (e.g., order confirmations, status updates, notifications). Configure your Mailgun API keys in `.env` and see `.github/instructions.md` for usage patterns.
+
 ---
 
 For detailed architecture, testing, and advanced usage, always refer to `.github/instructions.md`.
